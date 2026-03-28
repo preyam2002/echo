@@ -30,6 +30,19 @@ const ChatPanel = ({ onWorldData }: ChatPanelProps) => {
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // Auto-fetch solar systems on mount for initial star map
+  useEffect(() => {
+    fetch("/api/world?path=systems")
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (data && Array.isArray(data) && onWorldData) {
+          onWorldData({ systems: data });
+        }
+      })
+      .catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     scrollRef.current?.scrollTo({
       top: scrollRef.current.scrollHeight,
