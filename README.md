@@ -1,36 +1,64 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Echo — EVE Frontier AI Navigator
 
-## Getting Started
+An AI-powered navigator for [EVE Frontier](https://www.evefrontier.com/), a decentralized space sandbox on the Sui blockchain. Echo combines a 3D star map visualization with a Claude-powered chat assistant that can query live game data.
 
-First, run the development server:
+## Features
+
+- **3D Star Map** — interactive visualization with React Three Fiber, bloom post-processing, security-level color coding, and orbit controls
+- **AI Navigator** — Claude-powered assistant with tool use to query the EVE Frontier World API in real-time
+- **Live Data** — fetches solar systems and smart assemblies from the World API, renders them on the star map
+- **Immersive UI** — dark space theme with cyan accents, animated messages, and contextual suggestions
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Framework | Next.js 16, React 19, TypeScript |
+| 3D | Three.js, React Three Fiber, Drei, Postprocessing |
+| AI | Anthropic Claude (Sonnet 4) with tool use |
+| Blockchain | Sui SDK v2 |
+| Styling | Tailwind CSS v4, Framer Motion |
+| Data | EVE Frontier World API v2 |
+
+## Quick Start
 
 ```bash
+cp .env.example .env.local
+# Add your ANTHROPIC_API_KEY
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Architecture
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```
+src/
+├── app/
+│   ├── api/chat/route.ts     # Claude chat with tool use → World API
+│   └── api/world/route.ts    # World API proxy
+├── components/
+│   ├── Layout.tsx             # Split view container
+│   ├── StarMap.tsx            # 3D visualization (R3F)
+│   └── ChatPanel.tsx          # Chat UI with suggestions
+├── lib/
+│   ├── ai.ts                 # Claude integration + 4 tools
+│   ├── sui-client.ts         # Sui network config
+│   └── world-api.ts          # World API client with caching
+└── types/index.ts             # SolarSystem, SmartAssembly, etc.
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+**AI Tool Use Flow:** User asks about game → Claude calls World API tools → data returned to chat AND rendered on star map simultaneously.
 
-## Learn More
+## Environment Variables
 
-To learn more about Next.js, take a look at the following resources:
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `ANTHROPIC_API_KEY` | Yes | Claude API key |
+| `NEXT_PUBLIC_SUI_NETWORK` | No | Sui network (default: testnet) |
+| `NEXT_PUBLIC_WORLD_API_URL` | No | World API endpoint |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## License
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+MIT
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Built by [Preyam](https://github.com/preyam2002) for the Sui x EVE Frontier Hackathon 2026.

@@ -3,24 +3,48 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { ChatMessage } from "@/types";
+import type { WorldData } from "@/lib/ai";
 
-const ChatPanel = () => {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+const WELCOME_MESSAGE: ChatMessage = {
+  id: "welcome",
+  role: "assistant",
+  content:
+    "Navigator online. I'm Echo, your guide to the EVE Frontier. Ask me about solar systems, smart assemblies, or strategic intel. Try: \"Show me the solar systems\" to load the star map.",
+  timestamp: Date.now(),
+};
+
+const SUGGESTIONS = [
+  "Show me all solar systems",
+  "What smart assemblies exist?",
+  "Explain the game mechanics",
+  "What's the safest region?",
+];
+
+interface ChatPanelProps {
+  onWorldData?: (data: WorldData) => void;
+}
+
+const ChatPanel = ({ onWorldData }: ChatPanelProps) => {
+  const [messages, setMessages] = useState<ChatMessage[]>([WELCOME_MESSAGE]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+    scrollRef.current?.scrollTo({
+      top: scrollRef.current.scrollHeight,
+      behavior: "smooth",
+    });
   }, [messages]);
 
-  const send = async () => {
-    if (!input.trim() || loading) return;
+  const send = async (text?: string) => {
+    const content = (text || input).trim();
+    if (!content || loading) return;
 
     const userMsg: ChatMessage = {
       id: crypto.randomUUID(),
       role: "user",
-      content: input.trim(),
+      content,
       timestamp: Date.now(),
     };
 
@@ -28,27 +52,57 @@ const ChatPanel = () => {
     setInput("");
     setLoading(true);
 
-    const res = await fetch("/api/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        messages: [...messages, userMsg].map(({ role, content }) => ({ role, content })),
-      }),
-    });
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: [...messages.filter((m) => m.id !== "welcome"), userMsg].map(
+            ({ role, content }) => ({ role, content })
+          ),
+        }),
+      });
 
-    const { message } = await res.json();
-    setMessages((prev) => [...prev, message]);
+      const data = await res.json();
+      if (data.message) {
+        setMessages((prev) => [...prev, data.message]);
+      }
+      if (data.worldData && onWorldData) {
+        onWorldData(data.worldData);
+      }
+    } catch {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          role: "assistant",
+          content: "Signal lost. Check your connection and try again.",
+          timestamp: Date.now(),
+        },
+      ]);
+    }
+
     setLoading(false);
   };
 
+  const showSuggestions = messages.length <= 1;
+
   return (
     <div className="flex flex-col h-full bg-zinc-950 text-zinc-100">
-      <div className="px-4 py-3 border-b border-zinc-800">
-        <h2 className="text-sm font-semibold text-cyan-400 tracking-wide uppercase">
-          Echo Navigator
-        </h2>
+      {/* Header */}
+      <div className="px-5 py-4 border-b border-zinc-800/50 bg-zinc-950">
+        <div className="flex items-center gap-3">
+          <div className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+          <h2 className="text-sm font-semibold text-cyan-400 tracking-wide uppercase">
+            Echo Navigator
+          </h2>
+        </div>
+        <p className="text-[11px] text-zinc-500 mt-1 ml-5">
+          EVE Frontier AI Assistant
+        </p>
       </div>
 
+      {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3">
         <AnimatePresence>
           {messages.map((msg) => (
@@ -57,37 +111,74 @@ const ChatPanel = () => {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
-              className={`text-sm leading-relaxed ${
+              className={`text-sm leading-relaxed rounded-xl p-3.5 ${
                 msg.role === "user"
-                  ? "text-zinc-300 bg-zinc-900 rounded-lg p-3"
-                  : "text-cyan-100 bg-zinc-900/50 border border-zinc-800 rounded-lg p-3"
+                  ? "text-zinc-200 bg-zinc-800/60 ml-8"
+                  : "text-zinc-300 bg-cyan-950/20 border border-cyan-900/30 mr-4"
               }`}
             >
-              <span className="text-xs text-zinc-500 block mb-1">
+              <span
+                className={`text-[10px] uppercase tracking-wider block mb-1.5 ${
+                  msg.role === "user" ? "text-zinc-500" : "text-cyan-500/70"
+                }`}
+              >
                 {msg.role === "user" ? "You" : "Echo"}
               </span>
-              {msg.content}
+              <div className="whitespace-pre-wrap">{msg.content}</div>
             </motion.div>
           ))}
         </AnimatePresence>
+
         {loading && (
-          <div className="text-xs text-zinc-500 animate-pulse">Echo is thinking...</div>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="flex items-center gap-2 text-xs text-cyan-400/60 p-3"
+          >
+            <div className="flex gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-bounce" style={{ animationDelay: "0ms" }} />
+              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-bounce" style={{ animationDelay: "150ms" }} />
+              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-bounce" style={{ animationDelay: "300ms" }} />
+            </div>
+            Scanning frequencies...
+          </motion.div>
+        )}
+
+        {/* Suggestions */}
+        {showSuggestions && !loading && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+            className="grid grid-cols-2 gap-2 mt-4"
+          >
+            {SUGGESTIONS.map((s) => (
+              <button
+                key={s}
+                onClick={() => send(s)}
+                className="text-[11px] text-left text-zinc-400 bg-zinc-900/50 hover:bg-zinc-800/60 border border-zinc-800/50 hover:border-cyan-800/40 rounded-lg px-3 py-2.5 transition-all hover:text-cyan-300"
+              >
+                {s}
+              </button>
+            ))}
+          </motion.div>
         )}
       </div>
 
-      <div className="p-3 border-t border-zinc-800">
+      {/* Input */}
+      <div className="p-3 border-t border-zinc-800/50 bg-zinc-950">
         <div className="flex gap-2">
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && send()}
             placeholder="Ask Echo about the frontier..."
-            className="flex-1 bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-cyan-600"
+            className="flex-1 bg-zinc-900/60 border border-zinc-800/50 rounded-xl px-4 py-2.5 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-cyan-700/50 transition-colors"
           />
           <button
-            onClick={send}
+            onClick={() => send()}
             disabled={loading || !input.trim()}
-            className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 disabled:bg-zinc-800 disabled:text-zinc-600 rounded-lg text-sm font-medium transition-colors"
+            className="px-5 py-2.5 bg-cyan-600 hover:bg-cyan-500 disabled:bg-zinc-800 disabled:text-zinc-600 rounded-xl text-sm font-medium transition-all"
           >
             Send
           </button>

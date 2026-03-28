@@ -11,14 +11,23 @@ export async function POST(request: Request) {
     );
   }
 
-  const reply = await chat(messages);
+  try {
+    const { text, worldData } = await chat(messages);
 
-  return NextResponse.json({
-    message: {
-      id: crypto.randomUUID(),
-      role: "assistant" as const,
-      content: reply,
-      timestamp: Date.now(),
-    },
-  });
+    return NextResponse.json({
+      message: {
+        id: crypto.randomUUID(),
+        role: "assistant" as const,
+        content: text,
+        timestamp: Date.now(),
+      },
+      worldData,
+    });
+  } catch (e) {
+    console.error("Chat error:", e);
+    return NextResponse.json(
+      { error: "Failed to generate response" },
+      { status: 500 }
+    );
+  }
 }
