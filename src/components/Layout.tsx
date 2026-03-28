@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import dynamic from "next/dynamic";
 import ChatPanel from "./ChatPanel";
+import SystemDetail from "./SystemDetail";
 import type { SolarSystem } from "@/types";
 
 const StarMap = dynamic(() => import("./StarMap"), { ssr: false });
@@ -12,6 +13,20 @@ const Layout = () => {
   const [selectedSystemId, setSelectedSystemId] = useState<string | null>(null);
   const [showChat, setShowChat] = useState(true);
 
+  const selectedSystem = useMemo(() => {
+    if (!selectedSystemId || !systems) return null;
+    return systems.find((s) => s.id === selectedSystemId) || null;
+  }, [selectedSystemId, systems]);
+
+  // ESC to deselect
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setSelectedSystemId(null);
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, []);
+
   return (
     <div className="flex flex-col md:flex-row h-screen w-screen overflow-hidden bg-black">
       {/* Star Map */}
@@ -20,6 +35,12 @@ const Layout = () => {
           systems={systems}
           selectedSystemId={selectedSystemId}
           onSystemSelect={setSelectedSystemId}
+        />
+
+        {/* System detail overlay */}
+        <SystemDetail
+          system={selectedSystem}
+          onClose={() => setSelectedSystemId(null)}
         />
 
         {/* Mobile toggle */}
