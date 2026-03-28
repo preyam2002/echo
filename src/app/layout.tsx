@@ -13,8 +13,15 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Echo — EVE Frontier Navigator",
-  description: "AI-powered navigator for EVE Frontier",
+  title: "Echo — AI Navigator for EVE Frontier",
+  description:
+    "An AI-powered space navigator that queries EVE Frontier's World API in real-time. Explore solar systems, analyze smart assemblies, and navigate the frontier with Claude AI tool use and 3D star map visualization.",
+  openGraph: {
+    title: "Echo — AI Navigator for EVE Frontier",
+    description:
+      "Explore the EVE Frontier universe with an AI navigator. 3D star map + Claude-powered assistant with real-time World API access.",
+    type: "website",
+  },
 };
 
 export default function RootLayout({
