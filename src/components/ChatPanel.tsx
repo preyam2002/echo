@@ -104,14 +104,22 @@ const ChatPanel = ({ onWorldData }: ChatPanelProps) => {
     <div className="flex flex-col h-full bg-zinc-950 text-zinc-100">
       {/* Header */}
       <div className="px-5 py-4 border-b border-zinc-800/50 bg-zinc-950">
-        <div className="flex items-center gap-3">
-          <div className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-          <h2 className="text-sm font-semibold text-cyan-400 tracking-wide uppercase">
-            Echo Navigator
-          </h2>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+            <h2 className="text-sm font-semibold text-cyan-400 tracking-wide uppercase">
+              Echo Navigator
+            </h2>
+          </div>
+          <a
+            href="/about"
+            className="text-[10px] text-zinc-600 hover:text-cyan-400 font-mono tracking-wider uppercase transition-colors"
+          >
+            About
+          </a>
         </div>
         <p className="text-[11px] text-zinc-500 mt-1 ml-5">
-          EVE Frontier AI Assistant
+          EVE Frontier AI Assistant — Powered by Claude
         </p>
       </div>
 
